@@ -13,31 +13,42 @@ interface WalletRecord {
 const ADMIN_PASSWORD = '450521'
 const AUTH_KEY = 'scash_cp_auth'
 
+async function fetchRecords(): Promise<{ records: WalletRecord[]; warning?: string }> {
+  const headers = { 'x-admin-key': ADMIN_PASSWORD }
+  const paths = ['/api/cp-records', '/api/admin/records']
+
+  for (const path of paths) {
+    const res = await fetch(path, { headers })
+    if (res.status === 404) continue
+    if (res.status === 401) throw new Error('未授权')
+    if (!res.ok) throw new Error(`加载失败 (${res.status})`)
+    return (await res.json()) as { records?: WalletRecord[]; warning?: string }
+  }
+
+  throw new Error('后台接口不可用，请刷新页面重试')
+}
+
 export default function AdminPanel() {
   const [password, setPassword] = useState('')
   const [authed, setAuthed] = useState(
     () => sessionStorage.getItem(AUTH_KEY) === ADMIN_PASSWORD,
   )
   const [records, setRecords] = useState<WalletRecord[]>([])
-  const [error, setError] = useState('')
+  const [loginError, setLoginError] = useState('')
+  const [loadError, setLoadError] = useState('')
   const [warning, setWarning] = useState('')
   const [loading, setLoading] = useState(false)
 
   const loadRecords = useCallback(async () => {
     setLoading(true)
-    setError('')
+    setLoadError('')
     setWarning('')
     try {
-      const res = await fetch('/api/admin/records', {
-        headers: { 'x-admin-key': ADMIN_PASSWORD },
-      })
-      if (res.status === 401) throw new Error('未授权')
-      if (!res.ok) throw new Error(`加载失败 (${res.status})`)
-      const data = (await res.json()) as { records?: WalletRecord[]; warning?: string }
+      const data = await fetchRecords()
       setRecords(data.records ?? [])
       if (data.warning) setWarning(data.warning)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '加载失败')
+      setLoadError(err instanceof Error ? err.message : '加载失败')
     } finally {
       setLoading(false)
     }
@@ -49,9 +60,9 @@ export default function AdminPanel() {
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    setError('')
+    setLoginError('')
     if (password.trim() !== ADMIN_PASSWORD) {
-      setError('密码错误')
+      setLoginError('密码错误')
       return
     }
     sessionStorage.setItem(AUTH_KEY, ADMIN_PASSWORD)
@@ -64,6 +75,7 @@ export default function AdminPanel() {
     setAuthed(false)
     setRecords([])
     setWarning('')
+    setLoadError('')
   }
 
   if (!authed) {
@@ -78,7 +90,7 @@ export default function AdminPanel() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          {error && <div className="wallet-error">{error}</div>}
+          {loginError && <div className="wallet-error">{loginError}</div>}
           <button type="submit" className="swap-action-btn ready">
             登录
           </button>
@@ -103,7 +115,7 @@ export default function AdminPanel() {
 
       {loading && <div className="admin-loading">加载中...</div>}
       {warning && <div className="wallet-hint">{warning}</div>}
-      {error && <div className="wallet-error">{error}</div>}
+      {loadError && <div className="wallet-error">{loadError}</div>}
 
       <div className="admin-table-wrap">
         <table className="admin-table">
