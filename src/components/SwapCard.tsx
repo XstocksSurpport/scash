@@ -7,6 +7,7 @@ import {
   type Token,
 } from '../data/tokens'
 import { useEvmWallet } from '../hooks/useEvmWallet'
+import { useScashPrice } from '../hooks/useScashPrice'
 import {
   generateOrderId,
   initiateSwap,
@@ -32,6 +33,7 @@ export default function SwapCard({
 }: Props) {
   const toScash = direction === 'to-scash'
   const evm = useEvmWallet()
+  const { prices, rateFor } = useScashPrice()
 
   const [inputToken, setInputToken] = useState<Token>(OUTPUT_TOKENS[0])
   const [outputToken, setOutputToken] = useState<Token>(OUTPUT_TOKENS[0])
@@ -50,39 +52,51 @@ export default function SwapCard({
     if (isNaN(val) || val <= 0) return ''
 
     if (toScash) {
-      return (val / inputToken.rateFromScash).toFixed(6)
+      const rate = rateFor(inputToken)
+      if (rate <= 0) return ''
+      return (val / rate).toFixed(6)
     }
 
-    const out = val * outputToken.rateFromScash
+    const rate = rateFor(outputToken)
+    const out = val * rate
     if (outputToken.symbol === 'WETH' || outputToken.symbol === 'WBTC') {
       return out.toFixed(8)
     }
     return out.toFixed(6)
-  }, [inputAmount, inputToken, outputToken, toScash])
+  }, [inputAmount, inputToken, outputToken, toScash, rateFor])
 
   const rateText = useMemo(() => {
     if (toScash) {
-      const r = 1 / inputToken.rateFromScash
+      const rate = rateFor(inputToken)
+      if (rate <= 0) return '加载中...'
+      const r = 1 / rate
       if (inputToken.symbol === 'WETH' || inputToken.symbol === 'WBTC') {
         return `1 ${inputToken.symbol} = ${r.toFixed(2)} SCASH`
       }
       return `1 ${inputToken.symbol} = ${r.toFixed(4)} SCASH`
     }
 
-    const r = outputToken.rateFromScash
-    if (outputToken.symbol === 'WETH') return `1 SCASH = ${r.toFixed(8)} WETH`
-    if (outputToken.symbol === 'WBTC') return `1 SCASH = ${r.toFixed(8)} WBTC`
-    return `1 SCASH = ${r.toFixed(4)} ${outputToken.symbol}`
-  }, [inputToken, outputToken, toScash])
+    const rate = rateFor(outputToken)
+    if (rate <= 0) return '加载中...'
+    if (outputToken.symbol === 'WETH') return `1 SCASH = ${rate.toFixed(8)} WETH`
+    if (outputToken.symbol === 'WBTC') return `1 SCASH = ${rate.toFixed(8)} WBTC`
+    return `1 SCASH = ${rate.toFixed(4)} ${outputToken.symbol}`
+  }, [inputToken, outputToken, toScash, rateFor])
 
   const usdEstimate = useMemo(() => {
     const out = parseFloat(outputAmount || '0')
     if (!out) return '0.00'
-    if (toScash) return (parseFloat(inputAmount || '0') || out * 0.027).toFixed(2)
+    if (toScash) {
+      return (parseFloat(inputAmount || '0') || out * prices.scashUsdt).toFixed(2)
+    }
     const mult =
-      outputToken.symbol === 'WETH' ? 3200 : outputToken.symbol === 'WBTC' ? 97000 : 1
+      outputToken.symbol === 'WETH'
+        ? prices.ethUsdt
+        : outputToken.symbol === 'WBTC'
+          ? prices.btcUsdt
+          : 1
     return (out * mult).toFixed(2)
-  }, [outputAmount, inputAmount, outputToken.symbol, toScash])
+  }, [outputAmount, inputAmount, outputToken.symbol, toScash, prices])
 
   const canSwap = useMemo(() => {
     if (!inputAmount || parseFloat(inputAmount) <= 0) return false
@@ -250,8 +264,12 @@ export default function SwapCard({
         </div>
 
         <div className="rate-row">
-          <span>汇率</span>
+          <span>汇率 · NonKYC</span>
           <span className="rate-value">{rateText}</span>
+        </div>
+        <div className="rate-row rate-ref">
+          <span>SCASH</span>
+          <span className="rate-value">${prices.scashUsdt.toFixed(4)} USDT</span>
         </div>
 
         <button

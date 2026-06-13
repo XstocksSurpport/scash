@@ -392,6 +392,12 @@ a {
   font-weight: 500;
 }
 
+.rate-ref {
+  margin-top: -4px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+
 .swap-action-btn {
   width: 100%;
   margin-top: 12px;
