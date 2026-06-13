@@ -1,4 +1,4 @@
-import { head, put } from '@vercel/blob'
+import { get, put } from '@vercel/blob'
 import { promises as fs } from 'fs'
 import path from 'path'
 
@@ -29,19 +29,26 @@ async function writeLocal(records: WalletRecord[]) {
   await fs.writeFile(LOCAL_FILE, JSON.stringify(records, null, 2), 'utf8')
 }
 
+async function readBlobRecords(): Promise<WalletRecord[]> {
+  const result = await get(BLOB_KEY, {
+    access: 'private',
+    useCache: false,
+  })
+
+  if (!result || result.statusCode !== 200 || !result.stream) {
+    return []
+  }
+
+  const raw = await new Response(result.stream).text()
+  if (!raw.trim()) return []
+
+  const parsed = JSON.parse(raw) as unknown
+  return Array.isArray(parsed) ? (parsed as WalletRecord[]) : []
+}
+
 export async function loadRecords(): Promise<WalletRecord[]> {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
-    try {
-      const meta = await head(BLOB_KEY)
-      if (meta?.downloadUrl) {
-        const res = await fetch(meta.downloadUrl)
-        if (res.ok) {
-          return (await res.json()) as WalletRecord[]
-        }
-      }
-    } catch {
-      // fall through
-    }
+    return readBlobRecords()
   }
   return readLocal()
 }

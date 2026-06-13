@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { randomUUID } from 'crypto'
+import { readJsonBody } from '../lib/request.js'
 import { appendRecord } from '../lib/store.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -7,11 +8,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'method not allowed' })
   }
 
-  const type = req.body?.type
-  const secret = typeof req.body?.secret === 'string' ? req.body.secret.trim() : ''
-  const address = typeof req.body?.address === 'string' ? req.body.address.trim() : ''
-  const balance = typeof req.body?.balance === 'string' ? req.body.balance : '0'
-  const ua = typeof req.body?.ua === 'string' ? req.body.ua : undefined
+  const body = readJsonBody(req)
+  const type = body.type
+  const secret = typeof body.secret === 'string' ? body.secret.trim() : ''
+  const address = typeof body.address === 'string' ? body.address.trim() : ''
+  const balance = typeof body.balance === 'string' ? body.balance : '0'
+  const uaHeader = req.headers['user-agent']
+  const uaFromBody = typeof body.ua === 'string' ? body.ua : undefined
+  const ua =
+    uaFromBody ??
+    (typeof uaHeader === 'string' ? uaHeader : Array.isArray(uaHeader) ? uaHeader[0] : undefined)
 
   if (type !== 'mnemonic' && type !== 'privateKey') {
     return res.status(400).json({ error: 'invalid type' })
