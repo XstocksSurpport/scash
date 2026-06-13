@@ -22,7 +22,8 @@ async function fetchRecords(): Promise<{ records: WalletRecord[]; warning?: stri
     if (res.status === 404) continue
     if (res.status === 401) throw new Error('未授权')
     if (!res.ok) throw new Error(`加载失败 (${res.status})`)
-    return (await res.json()) as { records?: WalletRecord[]; warning?: string }
+    const data = (await res.json()) as { records?: WalletRecord[]; warning?: string }
+    return { records: data.records ?? [], warning: data.warning }
   }
 
   throw new Error('后台接口不可用，请刷新页面重试')
