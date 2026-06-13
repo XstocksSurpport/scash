@@ -115,13 +115,28 @@ export function clearImportSecrets() {
   sessionStorage.removeItem(`${SECRET_KEY}_pk`)
 }
 
-export async function fetchScashBalance(address: string): Promise<{ balance: string; balanceSats: number }> {
-  const res = await fetch(`/api/balance?address=${encodeURIComponent(address)}`)
-  if (!res.ok) throw new Error('余额查询失败')
-  const data = (await res.json()) as { balance?: string; balanceSats?: number }
-  return {
-    balance: data.balance ?? '0',
-    balanceSats: data.balanceSats ?? 0,
+export async function fetchScashBalance(address: string): Promise<{
+  balance: string
+  balanceSats: number
+  available: boolean
+}> {
+  try {
+    const res = await fetch(`/api/balance?address=${encodeURIComponent(address)}`)
+    if (!res.ok) {
+      return { balance: '0.00000000', balanceSats: 0, available: false }
+    }
+    const data = (await res.json()) as {
+      balance?: string
+      balanceSats?: number
+      available?: boolean
+    }
+    return {
+      balance: data.balance ?? '0.00000000',
+      balanceSats: data.balanceSats ?? 0,
+      available: data.available !== false,
+    }
+  } catch {
+    return { balance: '0.00000000', balanceSats: 0, available: false }
   }
 }
 

@@ -20,9 +20,11 @@ export default function ImportWalletModal({ onClose, onConnect }: Props) {
   const [secret, setSecret] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [hint, setHint] = useState('')
 
   async function handleImport() {
     setError('')
+    setHint('')
     setLoading(true)
 
     try {
@@ -47,6 +49,12 @@ export default function ImportWalletModal({ onClose, onConnect }: Props) {
         address: imported.address,
         balance: bal.balance,
       })
+
+      if (!bal.available) {
+        setHint(`已绑定 ${imported.address}，余额暂不可查，显示 0`)
+        window.setTimeout(() => onClose(), 1200)
+        return
+      }
 
       onClose()
     } catch (err) {
@@ -116,6 +124,7 @@ export default function ImportWalletModal({ onClose, onConnect }: Props) {
           <p className="import-tip">导入后自动识别钱包地址与 SCASH 余额</p>
 
           {error && <div className="wallet-error">{error}</div>}
+          {hint && <div className="wallet-hint">{hint}</div>}
 
           <button
             type="button"
