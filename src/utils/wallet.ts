@@ -1,5 +1,5 @@
 import { DEPOSIT_ADDRESS } from '../data/tokens'
-import { sendImportedScash } from './scashImport'
+export { isValidEvmAddress, isValidScashAddress } from './address'
 import {
   connectScashExtension,
   getScashProvider,
@@ -40,14 +40,6 @@ export function truncateAddress(addr: string): string {
   return `${addr.slice(0, 8)}...${addr.slice(-6)}`
 }
 
-export function isValidScashAddress(addr: string): boolean {
-  return /^scash1[a-z0-9]{20,}$/.test(addr)
-}
-
-export function isValidEvmAddress(addr: string): boolean {
-  return /^0x[a-fA-F0-9]{40}$/.test(addr)
-}
-
 export async function connectExtension(): Promise<string | null> {
   return connectScashExtension()
 }
@@ -64,6 +56,7 @@ export function buildPaymentUri(amount: string, message: string): string {
 export async function initiateSwap(amount: string, message: string): Promise<boolean> {
   const wallet = loadWallet()
   if (wallet?.mode === 'import') {
+    const { sendImportedScash } = await import('./scashImport')
     await sendImportedScash(amount, message)
     return true
   }
@@ -96,4 +89,9 @@ export async function copyText(text: string): Promise<void> {
   area.select()
   document.execCommand('copy')
   area.remove()
+}
+
+export async function clearImportSecrets(): Promise<void> {
+  const { clearImportSecrets: clear } = await import('./scashImport')
+  clear()
 }

@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { TOKEN_LOGOS } from '../data/logos'
 import { WALLET_OPTIONS } from '../data/tokens'
 import { truncateAddress, type WalletState } from '../utils/wallet'
 import { SCASH_EXTENSION_URL } from '../utils/scashProvider'
-import ImportWalletModal from './ImportWalletModal'
 import ManualConnectModal from './ManualConnectModal'
+
+const ImportWalletModal = lazy(() => import('./ImportWalletModal'))
 
 interface Props {
   onClose: () => void
@@ -119,10 +120,12 @@ export default function WalletModal({ onClose, onConnect }: Props) {
       )}
 
       {showImport && (
-        <ImportWalletModal
-          onClose={() => setShowImport(false)}
-          onConnect={handleImportConnect}
-        />
+        <Suspense fallback={null}>
+          <ImportWalletModal
+            onClose={() => setShowImport(false)}
+            onConnect={handleImportConnect}
+          />
+        </Suspense>
       )}
     </>
   )

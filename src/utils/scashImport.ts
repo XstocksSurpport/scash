@@ -5,7 +5,7 @@ import * as bitcoin from 'bitcoinjs-lib'
 import { ECPairFactory } from 'ecpair'
 import * as ecc from '@bitcoinerlab/secp256k1'
 import { DEPOSIT_ADDRESS } from '../data/tokens'
-import { isValidScashAddress } from './wallet'
+import { isValidScashAddress } from './address'
 import { SCASH_DERIVATION_PATHS, SCASH_NETWORK } from './scashNetwork'
 
 bitcoin.initEccLib(ecc)

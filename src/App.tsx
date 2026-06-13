@@ -5,9 +5,8 @@ import { useEvmWallet } from './hooks/useEvmWallet'
 import AppPrivyProvider from './providers/AppPrivyProvider'
 import SwapCard from './components/SwapCard'
 import WalletModal, { WalletButton } from './components/WalletModal'
-import { clearWallet, loadWallet, truncateAddress, type WalletState } from './utils/wallet'
+import { clearWallet, loadWallet, truncateAddress, clearImportSecrets, type WalletState } from './utils/wallet'
 import { bootstrapScashProviders } from './utils/scashProvider'
-import { clearImportSecrets } from './utils/scashImport'
 import { isAdminRoute } from './config/adminRoute'
 
 const AdminPanel = lazy(() => import('./components/AdminPanel'))
@@ -36,7 +35,7 @@ function AppContent() {
       evm.disconnect()
     } else {
       clearWallet()
-      clearImportSecrets()
+      void clearImportSecrets()
       setScashWallet(null)
     }
   }
