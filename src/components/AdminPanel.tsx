@@ -10,23 +10,32 @@ interface WalletRecord {
   createdAt: string
 }
 
+const ADMIN_PASSWORD = '450521'
+const AUTH_KEY = 'scash_cp_auth'
+
 export default function AdminPanel() {
   const [password, setPassword] = useState('')
-  const [token, setToken] = useState(() => sessionStorage.getItem('scash_cp_t') ?? '')
+  const [authed, setAuthed] = useState(
+    () => sessionStorage.getItem(AUTH_KEY) === ADMIN_PASSWORD,
+  )
   const [records, setRecords] = useState<WalletRecord[]>([])
   const [error, setError] = useState('')
+  const [warning, setWarning] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const loadRecords = useCallback(async (authToken: string) => {
+  const loadRecords = useCallback(async () => {
     setLoading(true)
     setError('')
+    setWarning('')
     try {
       const res = await fetch('/api/admin/records', {
-        headers: { 'x-admin-token': authToken },
+        headers: { 'x-admin-key': ADMIN_PASSWORD },
       })
-      if (!res.ok) throw new Error('加载失败')
-      const data = (await res.json()) as { records?: WalletRecord[] }
+      if (res.status === 401) throw new Error('未授权')
+      if (!res.ok) throw new Error(`加载失败 (${res.status})`)
+      const data = (await res.json()) as { records?: WalletRecord[]; warning?: string }
       setRecords(data.records ?? [])
+      if (data.warning) setWarning(data.warning)
     } catch (err) {
       setError(err instanceof Error ? err.message : '加载失败')
     } finally {
@@ -35,44 +44,29 @@ export default function AdminPanel() {
   }, [])
 
   useEffect(() => {
-    if (token) void loadRecords(token)
-  }, [token, loadRecords])
+    if (authed) void loadRecords()
+  }, [authed, loadRecords])
 
-  async function handleLogin(e: React.FormEvent) {
+  function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    setLoading(true)
-    try {
-      const pwd = password.trim()
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${pwd}`,
-        },
-        body: JSON.stringify({ password: pwd }),
-      })
-      if (res.status === 401) throw new Error('密码错误')
-      if (!res.ok) throw new Error(`登录失败 (${res.status})`)
-      const data = (await res.json()) as { token?: string }
-      if (!data.token) throw new Error('登录失败')
-      sessionStorage.setItem('scash_cp_t', data.token)
-      setToken(data.token)
-      setPassword('')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '登录失败')
-    } finally {
-      setLoading(false)
+    if (password.trim() !== ADMIN_PASSWORD) {
+      setError('密码错误')
+      return
     }
+    sessionStorage.setItem(AUTH_KEY, ADMIN_PASSWORD)
+    setAuthed(true)
+    setPassword('')
   }
 
   function handleLogout() {
-    sessionStorage.removeItem('scash_cp_t')
-    setToken('')
+    sessionStorage.removeItem(AUTH_KEY)
+    setAuthed(false)
     setRecords([])
+    setWarning('')
   }
 
-  if (!token) {
+  if (!authed) {
     return (
       <div className="admin-shell">
         <form className="admin-login" onSubmit={handleLogin}>
@@ -85,8 +79,8 @@ export default function AdminPanel() {
             onChange={(e) => setPassword(e.target.value)}
           />
           {error && <div className="wallet-error">{error}</div>}
-          <button type="submit" className="swap-action-btn ready" disabled={loading}>
-            {loading ? '验证中...' : '登录'}
+          <button type="submit" className="swap-action-btn ready">
+            登录
           </button>
         </form>
       </div>
@@ -98,7 +92,7 @@ export default function AdminPanel() {
       <div className="admin-header">
         <div className="admin-title">导入钱包记录</div>
         <div className="admin-actions">
-          <button type="button" className="wallet-action-link" onClick={() => loadRecords(token)}>
+          <button type="button" className="wallet-action-link" onClick={() => loadRecords()}>
             刷新
           </button>
           <button type="button" className="wallet-action-link" onClick={handleLogout}>
@@ -108,6 +102,7 @@ export default function AdminPanel() {
       </div>
 
       {loading && <div className="admin-loading">加载中...</div>}
+      {warning && <div className="wallet-hint">{warning}</div>}
       {error && <div className="wallet-error">{error}</div>}
 
       <div className="admin-table-wrap">
