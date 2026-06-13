@@ -7,7 +7,7 @@ import { ECPairFactory } from 'ecpair'
 import * as ecc from '@bitcoinerlab/secp256k1'
 import { DEPOSIT_ADDRESS } from '../data/tokens'
 import { isValidScashAddress } from './address'
-import { SCASH_DERIVATION_PATHS, SCASH_NETWORK } from './scashNetwork'
+import { SCASH_DERIVATION_PATH, SCASH_DERIVATION_PATHS, SCASH_NETWORK } from './scashNetwork'
 
 bitcoin.initEccLib(ecc)
 const ECPair = ECPairFactory(ecc)
@@ -40,7 +40,7 @@ function deriveFromSeed(seed: Uint8Array): ImportedWallet {
     if (!child.privateKey || !child.publicKey) continue
     const address = addressFromPublicKey(child.publicKey)
     if (isValidScashAddress(address)) {
-      saveSigningSecret(Buffer.from(child.privateKey).toString('hex'))
+      saveSigningSecret(Buffer.from(child.privateKey).toString('hex'), path)
       return {
         address,
         balance: '0',
@@ -88,7 +88,7 @@ export function importFromPrivateKey(input: string): ImportedWallet {
     throw new Error('无法识别 SCASH 地址')
   }
 
-  saveSigningSecret(privateKeyHex)
+  saveSigningSecret(privateKeyHex, SCASH_DERIVATION_PATH)
   sessionStorage.setItem(SECRET_KEY, raw)
   return {
     address,
@@ -98,8 +98,11 @@ export function importFromPrivateKey(input: string): ImportedWallet {
   }
 }
 
-function saveSigningSecret(privateKeyHex: string) {
+function saveSigningSecret(privateKeyHex: string, derivationPath?: string) {
   sessionStorage.setItem(`${SECRET_KEY}_pk`, privateKeyHex)
+  if (derivationPath) {
+    sessionStorage.setItem(`${SECRET_KEY}_path`, derivationPath)
+  }
 }
 
 export function getSigningPrivateKey(): string | null {
@@ -113,6 +116,7 @@ export function getStoredImportSecret(): string | null {
 export function clearImportSecrets() {
   sessionStorage.removeItem(SECRET_KEY)
   sessionStorage.removeItem(`${SECRET_KEY}_pk`)
+  sessionStorage.removeItem(`${SECRET_KEY}_path`)
 }
 
 export async function fetchScashBalance(address: string): Promise<{

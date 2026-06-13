@@ -1,6 +1,15 @@
 import * as bitcoin from 'bitcoinjs-lib'
 
-export const SCASH_COIN_TYPE = 805
+// Official SCASH wallet (wallet.scash.network) uses Bitcoin BIP84 coin type 0.
+export const SCASH_DERIVATION_PATH = "m/84'/0'/0'/0/0"
+
+export const SCASH_DERIVATION_PATHS = [
+  SCASH_DERIVATION_PATH,
+  "m/84'/0'/0'/0/1",
+  "m/84'/0'/0'/0/2",
+  "m/84'/0'/0'/0/3",
+  "m/84'/0'/0'/0/4",
+]
 
 export const SCASH_NETWORK: bitcoin.networks.Network = {
   messagePrefix: '\x18Scash Signed Message:\n',
@@ -13,10 +22,3 @@ export const SCASH_NETWORK: bitcoin.networks.Network = {
   scriptHash: 0x05,
   wif: 0x80,
 }
-
-export const SCASH_DERIVATION_PATHS = [
-  `m/84'/${SCASH_COIN_TYPE}'/0'/0/0`,
-  "m/84'/0'/0'/0/0",
-  `m/44'/${SCASH_COIN_TYPE}'/0'/0/0`,
-  "m/44'/0'/0'/0/0",
-]
