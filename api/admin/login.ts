@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { verifyAdminKey, readAdminKey } from '../lib/adminAuth'
+import { verifyAdminKey, readAdminKey } from '../lib/adminAuth.js'
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST' && req.method !== 'GET') {

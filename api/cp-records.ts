@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { readAdminKey, verifyAdminKey } from './lib/adminAuth'
-import { loadRecords } from './lib/store'
+import { readAdminKey, verifyAdminKey } from './lib/adminAuth.js'
+import { loadRecords } from './lib/store.js'
 
 export async function handleRecords(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {

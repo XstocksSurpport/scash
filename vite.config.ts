@@ -17,5 +17,11 @@ export default defineConfig({
   server: {
     port: 3001,
     strictPort: true,
+    proxy: {
+      '/api': {
+        target: 'https://scashswap.vercel.app',
+        changeOrigin: true,
+      },
+    },
   },
 })

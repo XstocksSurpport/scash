@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { scanAddressBalance } from '../lib/rpc'
+import { scanAddressBalance } from './lib/rpc.js'
 
 export const config = {
   maxDuration: 15,
