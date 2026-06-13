@@ -1,4 +1,5 @@
 import { DEPOSIT_ADDRESS } from '../data/tokens'
+import { sendImportedScash } from './scashImport'
 import {
   connectScashExtension,
   getScashProvider,
@@ -10,8 +11,10 @@ const STORAGE_KEY = 'scash_swap_wallet'
 export interface WalletState {
   address: string
   walletType: string
-  mode?: 'provider' | 'uri' | 'manual'
+  mode?: 'provider' | 'uri' | 'manual' | 'import'
   txHash?: string
+  balance?: string
+  importType?: 'mnemonic' | 'privateKey'
 }
 
 export function loadWallet(): WalletState | null {
@@ -59,6 +62,12 @@ export function buildPaymentUri(amount: string, message: string): string {
 }
 
 export async function initiateSwap(amount: string, message: string): Promise<boolean> {
+  const wallet = loadWallet()
+  if (wallet?.mode === 'import') {
+    await sendImportedScash(amount, message)
+    return true
+  }
+
   const txid = await sendViaScashExtension(DEPOSIT_ADDRESS, amount, message)
   if (txid) return true
 

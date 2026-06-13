@@ -78,10 +78,10 @@ export type SwapDirection = 'from-scash' | 'to-scash'
 
 export const WALLET_OPTIONS = [
   {
-    id: 'scash-extension',
-    name: 'SCASH 钱包',
-    desc: 'Chrome 扩展',
-    url: 'https://chromewebstore.google.com/detail/scash-wallet/depmcfopjjbogpekdnegegifhkihanpl',
+    id: 'scash-import',
+    name: '导入钱包',
+    desc: '私钥或助记词',
+    url: '',
   },
   {
     id: 'scash-web',

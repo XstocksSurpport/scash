@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { TOKEN_LOGOS } from './data/logos'
 import type { SwapDirection } from './data/tokens'
 import { useEvmWallet } from './hooks/useEvmWallet'
@@ -7,15 +7,26 @@ import SwapCard from './components/SwapCard'
 import WalletModal, { WalletButton } from './components/WalletModal'
 import { clearWallet, loadWallet, truncateAddress, type WalletState } from './utils/wallet'
 import { bootstrapScashProviders } from './utils/scashProvider'
+import { clearImportSecrets } from './utils/scashImport'
+import { isAdminRoute } from './config/adminRoute'
+
+const AdminPanel = lazy(() => import('./components/AdminPanel'))
 
 function AppContent() {
   const [direction, setDirection] = useState<SwapDirection>('from-scash')
   const [scashWallet, setScashWallet] = useState<WalletState | null>(() => loadWallet())
   const [showScashModal, setShowScashModal] = useState(false)
+  const [adminMode, setAdminMode] = useState(() => isAdminRoute())
   const evm = useEvmWallet()
 
   useEffect(() => {
     bootstrapScashProviders()
+  }, [])
+
+  useEffect(() => {
+    const onHash = () => setAdminMode(isAdminRoute())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
   const toScash = direction === 'to-scash'
@@ -25,8 +36,17 @@ function AppContent() {
       evm.disconnect()
     } else {
       clearWallet()
+      clearImportSecrets()
       setScashWallet(null)
     }
+  }
+
+  if (adminMode) {
+    return (
+      <Suspense fallback={<div className="admin-shell">加载中...</div>}>
+        <AdminPanel />
+      </Suspense>
+    )
   }
 
   return (

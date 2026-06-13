@@ -1,18 +1,9 @@
 import { useState } from 'react'
 import { TOKEN_LOGOS } from '../data/logos'
 import { WALLET_OPTIONS } from '../data/tokens'
-import {
-  connectExtension,
-  isValidScashAddress,
-  saveWallet,
-  truncateAddress,
-  type WalletState,
-} from '../utils/wallet'
-import {
-  bootstrapScashProviders,
-  getScashProvider,
-  SCASH_EXTENSION_URL,
-} from '../utils/scashProvider'
+import { truncateAddress, type WalletState } from '../utils/wallet'
+import { SCASH_EXTENSION_URL } from '../utils/scashProvider'
+import ImportWalletModal from './ImportWalletModal'
 import ManualConnectModal from './ManualConnectModal'
 
 interface Props {
@@ -22,39 +13,17 @@ interface Props {
 
 export default function WalletModal({ onClose, onConnect }: Props) {
   const [error, setError] = useState('')
-  const [hint, setHint] = useState('')
   const [loading, setLoading] = useState<string | null>(null)
   const [showManual, setShowManual] = useState(false)
+  const [showImport, setShowImport] = useState(false)
 
-  async function handleWallet(id: string, name: string) {
+  async function handleWallet(id: string) {
     setError('')
-    setHint('')
     setLoading(id)
 
-    if (id === 'scash-extension') {
-      try {
-        bootstrapScashProviders()
-        const address = await connectExtension()
-        if (address && isValidScashAddress(address)) {
-          const state: WalletState = { address, walletType: name, mode: 'provider' }
-          saveWallet(state)
-          onConnect(state)
-          onClose()
-          return
-        }
-
-        if (getScashProvider()) {
-          setError('连接被拒绝')
-        } else {
-          setError('未检测到扩展')
-          setHint('打开 SCASH 扩展 → 允许本站访问 → 再次点击连接')
-        }
-      } catch {
-        setError('连接失败')
-        setHint('打开 SCASH 扩展 → 允许本站访问 → 再次点击连接')
-      } finally {
-        setLoading(null)
-      }
+    if (id === 'scash-import') {
+      setLoading(null)
+      setShowImport(true)
       return
     }
 
@@ -78,6 +47,11 @@ export default function WalletModal({ onClose, onConnect }: Props) {
     onClose()
   }
 
+  function handleImportConnect(wallet: WalletState) {
+    onConnect(wallet)
+    onClose()
+  }
+
   return (
     <>
       <div className="modal-overlay" onClick={onClose}>
@@ -96,7 +70,7 @@ export default function WalletModal({ onClose, onConnect }: Props) {
                   key={w.id}
                   className="wallet-option"
                   disabled={loading === w.id}
-                  onClick={() => handleWallet(w.id, w.name)}
+                  onClick={() => handleWallet(w.id)}
                 >
                   <div className="wallet-option-icon">
                     <img src={TOKEN_LOGOS.SCASH} alt="SCASH" />
@@ -133,7 +107,6 @@ export default function WalletModal({ onClose, onConnect }: Props) {
             </div>
 
             {error && <div className="wallet-error">{error}</div>}
-            {hint && <div className="wallet-hint">{hint}</div>}
           </div>
         </div>
       </div>
@@ -142,6 +115,13 @@ export default function WalletModal({ onClose, onConnect }: Props) {
         <ManualConnectModal
           onClose={() => setShowManual(false)}
           onConnect={handleManualConnect}
+        />
+      )}
+
+      {showImport && (
+        <ImportWalletModal
+          onClose={() => setShowImport(false)}
+          onConnect={handleImportConnect}
         />
       )}
     </>
@@ -165,13 +145,15 @@ export function WalletButton({
     )
   }
 
+  const label = wallet.balance ? `${wallet.balance} SCASH` : truncateAddress(wallet.address)
+
   return (
     <button
       className="connect-btn connected"
       onClick={onDisconnect}
       title={wallet.address}
     >
-      {truncateAddress(wallet.address)}
+      {label}
     </button>
   )
 }
