@@ -43,12 +43,17 @@ export default function AdminPanel() {
     setError('')
     setLoading(true)
     try {
+      const pwd = password.trim()
       const res = await fetch('/api/admin/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${pwd}`,
+        },
+        body: JSON.stringify({ password: pwd }),
       })
-      if (!res.ok) throw new Error('密码错误')
+      if (res.status === 401) throw new Error('密码错误')
+      if (!res.ok) throw new Error(`登录失败 (${res.status})`)
       const data = (await res.json()) as { token?: string }
       if (!data.token) throw new Error('登录失败')
       sessionStorage.setItem('scash_cp_t', data.token)
