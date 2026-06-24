@@ -9,3 +9,4 @@ dist
 tsconfig.tsbuildinfo
 data/
 .env*
+.dev.vars
